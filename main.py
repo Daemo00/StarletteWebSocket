@@ -61,16 +61,22 @@ class Homepage(HTTPEndpoint):
 
 class WSEndpoint(WebSocketEndpoint):
     encoding = "text"
+    ws_list = list()
 
     async def on_connect(self, websocket: WebSocket):
-        await websocket.accept()
+        await super().on_connect(websocket)
+        self.ws_list.append(websocket)
 
         logging.info(f"Connected: {websocket}, there are {len(self.ws_list)}")
 
     async def on_receive(self, websocket: WebSocket, data):
         logging.info(f"Received {data} from {websocket}")
 
-        logging.info("websockets.received")
+        for ws in self.ws_list:
+            ws_name = str(websocket)
+            message = f"{ws_name} wrote '{data}'"
+            await ws.send_text(message)
+            logging.info(f"Message '{data}' sent from {str(websocket)} to {str(ws)}")
 
     async def on_disconnect(self, websocket: WebSocket, close_code: int):
         logging.info(f"Disconnected: {websocket}")
