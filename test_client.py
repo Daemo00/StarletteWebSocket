@@ -7,9 +7,9 @@ def main():
     client = TestClient(instance)
 
     with client.websocket_connect("/ws") as websocket:
-        websocket.send_bytes(b"Hello!")
+        websocket.send_text("Hello!")
 
-        data = websocket.receive_bytes()
+        data = websocket.receive_text()
 
         print(data)
 
