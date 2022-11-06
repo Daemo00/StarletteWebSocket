@@ -1,12 +1,22 @@
 import logging
 
+import uvicorn
 from starlette.applications import Starlette
 from starlette.endpoints import HTTPEndpoint, WebSocketEndpoint
 from starlette.responses import HTMLResponse
 from starlette.routing import Route, WebSocketRoute
 from starlette.websockets import WebSocket
 
-logger = logging.getLogger(__name__)
+
+def setup_logging():
+    logging.basicConfig(
+        format='%(asctime)s - %(levelname)s: %(message)s',
+        level=logging.INFO,
+    )
+    root_logger = logging.root
+    for uv_logger_name in uvicorn.config.LOGGING_CONFIG['loggers'].keys():
+        uv_logger = logging.getLogger(uv_logger_name)
+        uv_logger.parent = root_logger
 
 
 html = """
@@ -55,15 +65,16 @@ class WSEndpoint(WebSocketEndpoint):
     async def on_connect(self, websocket: WebSocket):
         await websocket.accept()
 
-        logger.info(f"Connected: {websocket}")
+        logging.info(f"Connected: {websocket}, there are {len(self.ws_list)}")
 
     async def on_receive(self, websocket: WebSocket, data):
-        await websocket.send_text(f"Message sent was: {data}")
+        logging.info(f"Received {data} from {websocket}")
 
-        logger.info("websockets.received")
+        logging.info("websockets.received")
 
     async def on_disconnect(self, websocket: WebSocket, close_code: int):
-        logger.info(f"Disconnected: {websocket}")
+        logging.info(f"Disconnected: {websocket}")
+        self.ws_list.remove(websocket)
 
 
 instance = Starlette(
@@ -72,3 +83,7 @@ instance = Starlette(
         WebSocketRoute("/ws", WSEndpoint, name="ws"),
     ),
 )
+
+if __name__ == '__main__':
+    setup_logging()
+    uvicorn.run(instance)
